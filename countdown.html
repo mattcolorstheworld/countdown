@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   BASE / SHARED
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  padding: 24px 16px 80px;
+  transition: background 0.3s;
+}
+
+#app { max-width: 480px; margin: 0 auto; }
+
+/* ═══════════════════════════════════════
+   MODERN THEME (default)
+═══════════════════════════════════════ */
+body.modern {
+  font-family: 'Inter', sans-serif;
+  background: #f2f2f7;
+}
+
+body.modern h1 {
+  font-size: 30px;
+  font-weight: 800;
+  color: #1c1c1e;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: -1px;
+}
+
+body.modern .subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: #8e8e93;
+  margin-bottom: 20px;
+}
+
+/* Theme toggle modern */
+body.modern .theme-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+body.modern #theme-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: #1c1c1e;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* Cal status modern */
+body.modern #cal-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #8e8e93;
+}
+body.modern #cal-status.connected { color: #2f9e44; }
+body.modern #connect-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+body.modern #import-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  background: #34c759;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  display: none;
+}
+body.modern #cal-status.connected #import-btn { display: inline-block; }
+
+/* Event cards modern */
+body.modern .event-card {
+  border-radius: 18px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.13);
+  position: relative;
+}
+body.modern .event-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+body.modern .event-date { font-size: 12px; opacity: 0.82; font-weight: 500; }
+body.modern .days-number { font-size: 48px; font-weight: 800; letter-spacing: -3px; line-height: 1; }
+body.modern .days-label { font-size: 12px; opacity: 0.82; text-align: right; }
+body.modern .today-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.9);
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin-top: 5px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+body.modern .delete-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.25);
+  border: none; border-radius: 50%;
+  width: 24px; height: 24px;
+  color: #fff; font-size: 13px;
+  cursor: pointer; opacity: 0;
+  transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+body.modern .event-card:hover .delete-btn { opacity: 1; }
+@media (hover:none) { body.modern .delete-btn { opacity: 0.8 !important; } }
+
+/* Add form modern */
+body.modern #add-form {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  margin-top: 4px;
+}
+body.modern #add-form h2 { font-size: 15px; font-weight: 700; color: #1c1c1e; margin-bottom: 16px; }
+body.modern label { display: block; font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+body.modern input[type="text"], body.modern input[type="date"] {
+  width: 100%; padding: 12px 14px;
+  border: 1.5px solid #e5e5ea; border-radius: 12px;
+  font-family: 'Inter', sans-serif; font-size: 15px; color: #1c1c1e;
+  background: #f9f9f9; outline: none;
+  transition: border-color 0.2s; margin-bottom: 14px;
+}
+body.modern input:focus { border-color: #007aff; background: #fff; }
+body.modern .color-swatch {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid transparent; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+body.modern .color-swatch.selected { border-color: #1c1c1e; transform: scale(1.18); }
+body.modern #add-btn {
+  width: 100%; padding: 14px;
+  background: #1c1c1e; color: #fff;
+  border: none; border-radius: 14px;
+  font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 6px;
+  transition: opacity 0.2s;
+}
+body.modern #add-btn:active { opacity: 0.75; }
+
+/* Undo toast modern */
+body.modern #undo-toast {
+  font-family: 'Inter', sans-serif;
+  background: #1c1c1e; color: #fff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: none;
+}
+body.modern #undo-btn {
+  font-family: 'Inter', sans-serif;
+  background: #fff; color: #1c1c1e;
+  border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  padding: 6px 12px; cursor: pointer;
+}
+body.modern #undo-bar { background: #007aff; }
+
+/* Import modal modern */
+body.modern #import-modal {
+  font-family: 'Inter', sans-serif;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+body.modern #import-modal h3 { font-size: 17px; font-weight: 700; color: #1c1c1e; margin-bottom: 16px; }
+body.modern .gcal-item {
+  padding: 12px; border-radius: 12px;
+  border: 1.5px solid #e5e5ea; margin-bottom: 8px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+body.modern .gcal-item:hover { border-color: #007aff; background: #f0f6ff; }
+body.modern .gcal-item-name { font-size: 14px; font-weight: 600; color: #1c1c1e; }
+body.modern .gcal-item-date { font-size: 11px; color: #8e8e93; margin-top: 3px; }
+body.modern #close-modal-btn {
+  font-family: 'Inter', sans-serif;
+  background: #f2f2f7; border: none; border-radius: 12px;
+  padding: 10px; width: 100%; font-size: 14px; font-weight: 600;
+  color: #1c1c1e; cursor: pointer; margin-top: 8px;
+}
+
+body.modern .empty-state {
+  text-align: center; color: #8e8e93;
+  font-size: 14px; padding: 24px 0; line-height: 1.8;
+}
+
+/* ═══════════════════════════════════════
+   NES THEME
+═══════════════════════════════════════ */
+body.nes {
+  font-family: 'Press Start 2P', monospace;
+  background: #1a1a2e;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(104,68,252,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,88,248,0.12) 0%, transparent 50%);
+}
+
+body.nes::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+  pointer-events: none; z-index: 999;
+}
+
+body.nes h1 {
+  font-size: 13px; color: #f8b800;
+  text-align: center; margin-bottom: 4px;
+  letter-spacing: 2px;
+  text-shadow: 3px 3px 0 rgba(248,184,0,0.3);
+  animation: flicker 5s infinite;
+}
+@keyframes flicker { 0%,94%,100%{opacity:1} 95%{opacity:0.7} 97%{opacity:1} 99%{opacity:0.5} }
+
+body.nes .subtitle { text-align: center; font-size: 6px; color: #555; margin-bottom: 20px; letter-spacing: 1px; }
+
+body.nes .theme-row { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+body.nes #theme-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px; background: #16213e;
+  border: 2px solid #fff; color: #fff;
+  padding: 6px 10px; cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+}
+
+body.nes #cal-status {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; font-size: 6px; margin-bottom: 14px; color: #555;
+}
+body.nes #cal-status.connected { color: #00a800; }
+body.nes #connect-btn {
+  font-family: 'Press Start 2P', monospace; font-size: 6px;
+  background: #0058f8; color: #fff; border: 2px solid #fff;
+  padding: 5px 8px; cursor: pointer; box-shadow: 2px 2px 0 #000;
+}
+body.nes #import-btn {
+  font-family: 'Press Start 2P', monospace; font-size: 6px;
+  background: #00a800; color: #fff; border: 2px solid #fff;
+  padding: 5px 8px; cursor: pointer; box-shadow: 2px 2px 0 #000;
+  display: none;
+}
+body.nes #cal-status.connected #import-btn { display: inline-block; }
+
+body.nes .event-card {
+  border: 3px solid #fff;
+  box-shadow: 3px 3px 0 #000, 6px 6px 0 rgba(0,0,0,0.3);
+  padding: 16px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  color: #fff; margin-bottom: 14px; position: relative;
+}
+body.nes .event-name { font-size: 8px; margin-bottom: 8px; line-height: 1.7; text-shadow: 2px 2px 0 rgba(0,0,0,0.5); }
+body.nes .event-date { font-size: 5px; opacity: 0.7; line-height: 1.8; }
+body.nes .days-number { font-size: 38px; color: #fff; line-height: 1; text-shadow: 4px 4px 0 rgba(0,0,0,0.4); display: block; margin-bottom: 4px; }
+body.nes .days-label { font-size: 5px; opacity: 0.75; text-align: right; }
+body.nes .today-badge {
+  font-size: 6px; background: #f8b800; color: #000;
+  padding: 3px 6px; display: inline-block; margin-top: 5px;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+body.nes .delete-btn {
+  position: absolute; top: -10px; right: -10px;
+  width: 24px; height: 24px;
+  background: #e40058; border: 2px solid #fff;
+  color: #fff; font-family: 'Press Start 2P', monospace;
+  font-size: 8px; cursor: pointer; opacity: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 2px 2px 0 #000; transition: opacity 0.15s;
+}
+body.nes .event-card:hover .delete-btn { opacity: 1; }
+@media (hover:none) { body.nes .delete-btn { opacity: 1 !important; top: 6px; right: 6px; } }
+
+body.nes #add-form {
+  border: 3px solid #fff; background: #16213e;
+  box-shadow: 3px 3px 0 #000; padding: 20px 16px;
+}
+body.nes #add-form h2 { font-size: 8px; color: #00e8d8; margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 10px; letter-spacing: 1px; }
+body.nes label { display: block; font-size: 6px; color: #888; margin-bottom: 8px; letter-spacing: 1px; }
+body.nes input[type="text"], body.nes input[type="date"] {
+  width: 100%; padding: 10px 12px;
+  background: #0d0d1a; border: 2px solid #444;
+  color: #fff; font-family: 'Press Start 2P', monospace;
+  font-size: 8px; outline: none; border-radius: 0;
+  -webkit-appearance: none; margin-bottom: 14px;
+  transition: border-color 0.2s;
+}
+body.nes input:focus { border-color: #00e8d8; }
+body.nes .color-swatch {
+  width: 32px; height: 32px;
+  border: 3px solid transparent; cursor: pointer;
+  box-shadow: 2px 2px 0 #000; transition: transform 0.1s;
+}
+body.nes .color-swatch.selected { border-color: #fff; transform: scale(1.2); }
+body.nes #add-btn {
+  width: 100%; padding: 14px;
+  background: #00a800; color: #fff;
+  border: 3px solid #fff;
+  font-family: 'Press Start 2P', monospace; font-size: 8px;
+  cursor: pointer; box-shadow: 3px 3px 0 #000;
+  letter-spacing: 1px; margin-top: 4px;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+body.nes #add-btn:active { transform: translate(3px,3px); box-shadow: none; }
+
+body.nes #undo-toast {
+  font-family: 'Press Start 2P', monospace;
+  background: #fff; color: #000;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 #000;
+  font-size: 7px; padding: 12px 16px;
+}
+body.nes #undo-btn {
+  font-family: 'Press Start 2P', monospace; font-size: 7px;
+  background: #e40058; color: #fff; border: 2px solid #000;
+  padding: 6px 10px; cursor: pointer; box-shadow: 2px 2px 0 #000;
+}
+body.nes #undo-bar { background: #e40058; }
+
+body.nes #import-modal {
+  font-family: 'Press Start 2P', monospace;
+  background: #16213e; border: 3px solid #fff;
+  box-shadow: 6px 6px 0 #000; color: #fff;
+}
+body.nes #import-modal h3 { font-size: 8px; color: #00e8d8; margin-bottom: 16px; }
+body.nes .gcal-item {
+  padding: 12px; border: 2px solid #444; margin-bottom: 8px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+body.nes .gcal-item:hover { border-color: #00e8d8; }
+body.nes .gcal-item-name { font-size: 7px; color: #fff; line-height: 1.6; }
+body.nes .gcal-item-date { font-size: 5px; color: #888; margin-top: 5px; }
+body.nes #close-modal-btn {
+  font-family: 'Press Start 2P', monospace; font-size: 7px;
+  background: #e40058; border: 2px solid #fff; color: #fff;
+  padding: 10px; width: 100%; cursor: pointer;
+  box-shadow: 2px 2px 0 #000; margin-top: 8px;
+}
+
+body.nes .empty-state {
+  text-align: center; color: #444;
+  font-size: 7px; line-height: 2.5;
+  padding: 24px 16px; border: 2px dashed #333;
+}
+
+/* ═══════════════════════════════════════
+   SHARED: COLOR ROW, UNDO, MODAL
+═══════════════════════════════════════ */
+.color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+#event-list { margin-bottom: 20px; }
+
+/* Undo toast shared */
+#undo-toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  display: flex; align-items: center; gap: 14px;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 1000; white-space: nowrap; overflow: hidden;
+}
+#undo-toast.show { transform: translateX(-50%) translateY(0); }
+#undo-bar {
+  position: absolute; bottom: 0; left: 0;
+  height: 3px; width: 100%;
+  transition: width linear;
+}
+
+/* Import modal overlay */
+#modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+#modal-overlay.show { display: flex; }
+#import-modal {
+  width: 100%; max-width: 440px;
+  max-height: 70vh; overflow-y: auto;
+  padding: 24px;
+}
+#import-modal h3 { margin-bottom: 16px; }
+.gcal-item { transition: background 0.15s; }
+</style>
+</head>
+<body class="modern">
+
+<div id="app">
+  <div class="theme-row">
+    <button id="theme-btn">🕹 NES MODE</button>
+  </div>
+
+  <h1 id="app-title">Countdown</h1>
+  <p class="subtitle" id="app-sub">Your upcoming events at a glance</p>
+
+  <div id="cal-status">
+    <span id="cal-label">● Not connected</span>
+    <button id="connect-btn">Connect Google Calendar</button>
+    <button id="import-btn">Import Events</button>
+  </div>
+
+  <div id="event-list"></div>
+
+  <div id="add-form">
+    <h2 id="form-title">Add Event</h2>
+    <label>Event Name</label>
+    <input type="text" id="event-name" placeholder="e.g. 4th of July" maxlength="30" />
+    <label>Date</label>
+    <input type="date" id="event-date" />
+    <label>Color</label>
+    <div class="color-row" id="color-row"></div>
+    <button id="add-btn">Add Event</button>
+  </div>
+</div>
+
+<!-- Undo Toast -->
+<div id="undo-toast">
+  <span id="undo-msg">Event deleted</span>
+  <button id="undo-btn">UNDO</button>
+  <div id="undo-bar"></div>
+</div>
+
+<!-- Import Modal -->
+<div id="modal-overlay">
+  <div id="import-modal">
+    <h3 id="modal-title">Import from Google Calendar</h3>
+    <div id="gcal-list"><p style="font-size:12px;color:#888;">Loading events…</p></div>
+    <button id="close-modal-btn">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ── THEME ────────────────────────────────────────────────────────
+let theme = localStorage.getItem('cdTheme') || 'modern';
+applyTheme(theme);
+
+function applyTheme(t) {
+  theme = t;
+  document.body.className = t;
+  localStorage.setItem('cdTheme', t);
+  const btn = document.getElementById('theme-btn');
+  const title = document.getElementById('app-title');
+  const sub = document.getElementById('app-sub');
+  const formTitle = document.getElementById('form-title');
+  const undoMsg = document.getElementById('undo-msg');
+  const modalTitle = document.getElementById('modal-title');
+  if (t === 'nes') {
+    btn.textContent = '✦ MODERN MODE';
+    title.textContent = '⚡ COUNTDOWN ⚡';
+    sub.textContent = 'INSERT EVENT TO CONTINUE';
+    formTitle.textContent = '▶ ADD EVENT';
+    undoMsg.textContent = 'EVENT DELETED';
+    modalTitle.textContent = 'IMPORT FROM GCAL';
+  } else {
+    btn.textContent = '🕹 NES MODE';
+    title.textContent = 'Countdown';
+    sub.textContent = 'Your upcoming events at a glance';
+    formTitle.textContent = 'Add Event';
+    undoMsg.textContent = 'Event deleted';
+    modalTitle.textContent = 'Import from Google Calendar';
+  }
+}
+
+document.getElementById('theme-btn').addEventListener('click', () => {
+  applyTheme(theme === 'modern' ? 'nes' : 'modern');
+});
+
+// ── DATA ─────────────────────────────────────────────────────────
+const COLORS = [
+  { name: 'Red',    hex: '#e03131' },
+  { name: 'Orange', hex: '#f76707' },
+  { name: 'Yellow', hex: '#e6a817' },
+  { name: 'Green',  hex: '#2f9e44' },
+  { name: 'Blue',   hex: '#1971c2' },
+  { name: 'Indigo', hex: '#4263eb' },
+  { name: 'Purple', hex: '#7c3aed' },
+];
+
+let events = JSON.parse(localStorage.getItem('nesCountdown') || '[]');
+let selectedColor = COLORS[0].hex;
+let undoData = null, undoTimer = null;
+let accessToken = localStorage.getItem('gcal_token') || null;
+
+// ── COLOR SWATCHES ────────────────────────────────────────────────
+const colorRow = document.getElementById('color-row');
+COLORS.forEach((c, i) => {
+  const sw = document.createElement('button');
+  sw.className = 'color-swatch' + (i === 0 ? ' selected' : '');
+  sw.style.background = c.hex;
+  sw.title = c.name;
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    selectedColor = c.hex;
+  });
+  colorRow.appendChild(sw);
+});
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function daysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  return Math.ceil((target - today) / 86400000);
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  });
+}
+
+function save() { localStorage.setItem('nesCountdown', JSON.stringify(events)); }
+
+// ── RENDER ────────────────────────────────────────────────────────
+function render() {
+  const list = document.getElementById('event-list');
+  list.innerHTML = '';
+
+  const upcoming = events
+    .map(e => ({ ...e, days: daysUntil(e.date) }))
+    .filter(e => e.days >= 0)
+    .sort((a, b) => a.days - b.days);
+
+  // Remove expired
+  if (upcoming.length !== events.length) {
+    events = events.filter(e => daysUntil(e.date) >= 0);
+    save();
+  }
+
+  if (upcoming.length === 0) {
+    const msg = theme === 'nes'
+      ? 'NO EVENTS FOUND<br><br>ADD ONE BELOW'
+      : 'No upcoming events.<br>Add one below to get started!';
+    list.innerHTML = `<div class="empty-state">${msg}</div>`;
+    return;
+  }
+
+  upcoming.forEach(e => {
+    const card = document.createElement('div');
+    card.className = 'event-card';
+    card.style.background = e.color;
+
+    const isToday = e.days === 0;
+    const nameTxt = theme === 'nes' ? e.name.toUpperCase() : e.name;
+    const daysLbl = theme === 'nes'
+      ? (e.days === 1 ? 'DAY LEFT' : 'DAYS LEFT')
+      : (e.days === 1 ? 'day to go' : 'days to go');
+    const todayHtml = isToday
+      ? `<div class="today-badge">${theme === 'nes' ? '★ TODAY! ★' : '🎉 Today!'}</div>`
+      : '';
+
+    card.innerHTML = `
+      <div class="event-left">
+        <div class="event-name">${nameTxt}</div>
+        <div class="event-date">${formatDate(e.date)}</div>
+        ${todayHtml}
+      </div>
+      <div class="event-right">
+        <span class="days-number">${e.days}</span>
+        <div class="days-label">${daysLbl}</div>
+      </div>
+      <button class="delete-btn" title="Delete">✕</button>
+    `;
+
+    card.querySelector('.delete-btn').addEventListener('click', () => deleteEvent(e.id));
+    list.appendChild(card);
+  });
+}
+
+// ── DELETE + UNDO ─────────────────────────────────────────────────
+function deleteEvent(id) {
+  const idx = events.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  undoData = { event: { ...events[idx] }, idx };
+  events.splice(idx, 1);
+  save(); render(); showUndo();
+}
+
+function showUndo() {
+  clearTimeout(undoTimer);
+  const toast = document.getElementById('undo-toast');
+  const bar = document.getElementById('undo-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  toast.classList.add('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bar.style.transition = 'width 3s linear';
+    bar.style.width = '0%';
+  }));
+  undoTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    undoData = null;
+  }, 3000);
+}
+
+document.getElementById('undo-btn').addEventListener('click', () => {
+  if (!undoData) return;
+  clearTimeout(undoTimer);
+  events.splice(undoData.idx, 0, undoData.event);
+  save(); render();
+  undoData = null;
+  document.getElementById('undo-toast').classList.remove('show');
+});
+
+// ── ADD EVENT ─────────────────────────────────────────────────────
+document.getElementById('add-btn').addEventListener('click', async () => {
+  const name = document.getElementById('event-name').value.trim();
+  const date = document.getElementById('event-date').value;
+  if (!name || !date) { alert('Please enter a name and date.'); return; }
+  if (daysUntil(date) < 0) { alert('That date has already passed!'); return; }
+  const newEvent = { id: Date.now(), name, date, color: selectedColor };
+  events.push(newEvent); save(); render();
+  document.getElementById('event-name').value = '';
+  document.getElementById('event-date').value = '';
+  if (accessToken) await addToGCal(newEvent);
+});
+
+// ── GOOGLE CALENDAR ───────────────────────────────────────────────
+const CLIENT_ID = '800299861656-9bhme0v545d32k4dpk04kk5qigft9n9n.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events';
+
+function updateCalUI() {
+  const status = document.getElementById('cal-status');
+  const label = document.getElementById('cal-label');
+  const btn = document.getElementById('connect-btn');
+  if (accessToken) {
+    status.className = 'connected';
+    label.textContent = theme === 'nes' ? '● GCAL: CONNECTED' : '● Google Calendar connected';
+    btn.textContent = theme === 'nes' ? 'DISCONNECT' : 'Disconnect';
+  } else {
+    status.className = '';
+    label.textContent = theme === 'nes' ? '● GCAL: NOT CONNECTED' : '● Not connected';
+    btn.textContent = theme === 'nes' ? 'CONNECT' : 'Connect Google Calendar';
+  }
+}
+
+document.getElementById('connect-btn').addEventListener('click', () => {
+  if (accessToken) {
+    accessToken = null;
+    localStorage.removeItem('gcal_token');
+    updateCalUI(); return;
+  }
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(CLIENT_ID)}` +
+    `&redirect_uri=${encodeURIComponent(location.href.split('?')[0].split('#')[0])}` +
+    `&response_type=token` +
+    `&scope=${encodeURIComponent(SCOPES)}` +
+    `&prompt=consent`;
+  const popup = window.open(authUrl, 'gcal', 'width=520,height=640');
+  const check = setInterval(() => {
+    try {
+      if (!popup || popup.closed) { clearInterval(check); return; }
+      const hash = new URLSearchParams(popup.location.hash.substring(1));
+      const token = hash.get('access_token');
+      if (token) {
+        accessToken = token;
+        localStorage.setItem('gcal_token', token);
+        updateCalUI();
+        popup.close();
+        clearInterval(check);
+      }
+    } catch(e) { /* cross-origin */ }
+  }, 500);
+});
+
+// Import modal
+document.getElementById('import-btn').addEventListener('click', async () => {
+  if (!accessToken) return;
+  document.getElementById('modal-overlay').classList.add('show');
+  const gcalList = document.getElementById('gcal-list');
+  gcalList.innerHTML = '<p style="font-size:11px;color:#888;padding:8px 0;">Loading…</p>';
+
+  try {
+    const today = new Date().toISOString();
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?orderBy=startTime&singleEvents=true&timeMin=${today}&maxResults=30`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const data = await res.json();
+    const items = (data.items || []).filter(ev => {
+      const d = ev.start?.date || ev.start?.dateTime?.substring(0,10);
+      return d && daysUntil(d) >= 0;
+    });
+
+    if (!items.length) {
+      gcalList.innerHTML = '<p style="font-size:11px;color:#888;padding:8px 0;">No upcoming events found.</p>';
+      return;
+    }
+
+    gcalList.innerHTML = '';
+    items.forEach(ev => {
+      const dateStr = ev.start?.date || ev.start?.dateTime?.substring(0,10);
+      const div = document.createElement('div');
+      div.className = 'gcal-item';
+      div.innerHTML = `
+        <div class="gcal-item-name">${ev.summary || 'Untitled'}</div>
+        <div class="gcal-item-date">${formatDate(dateStr)}</div>
+      `;
+      div.addEventListener('click', () => {
+        const already = events.find(e => e.date === dateStr && e.name === ev.summary);
+        if (already) { alert('Already in your countdown!'); return; }
+        const color = COLORS[events.length % COLORS.length].hex;
+        const newEvent = { id: Date.now(), name: ev.summary || 'Event', date: dateStr, color };
+        events.push(newEvent); save(); render();
+        document.getElementById('modal-overlay').classList.remove('show');
+      });
+      gcalList.appendChild(div);
+    });
+  } catch(e) {
+    gcalList.innerHTML = '<p style="font-size:11px;color:#e03131;">Could not load events. Try reconnecting.</p>';
+  }
+});
+
+document.getElementById('close-modal-btn').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('show');
+});
+
+async function addToGCal(event) {
+  if (!accessToken) return;
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: event.name, start: { date: event.date }, end: { date: event.date } })
+    });
+  } catch(e) { console.warn('GCal add failed:', e); }
+}
+
+// Check for OAuth redirect token
+(function() {
+  const hash = new URLSearchParams(window.location.hash.substring(1));
+  const token = hash.get('access_token');
+  if (token) {
+    accessToken = token;
+    localStorage.setItem('gcal_token', token);
+    history.replaceState(null, '', location.pathname);
+  }
+  updateCalUI();
+})();
+
+render();
+</script>
+</body>
+</html>
